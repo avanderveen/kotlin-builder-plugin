@@ -5,6 +5,7 @@ import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
 class KotlinBuilderPlugin : Plugin<Project> {
+    // TODO make each of these things optional - if ksp plugin is already added, then don't add it, etc.
     override fun apply(project: Project) {
         project.plugins.apply("com.google.devtools.ksp")
 
@@ -19,16 +20,20 @@ class KotlinBuilderPlugin : Plugin<Project> {
     }
 }
 
+// TODO detect version
 private fun Project.artifactVersion(group: String, artifact: String): String {
-    fun artifactVersion(project: Project, group: String, artifact: String): String? {
-        return project.configurations.firstNotNullOfOrNull { configuration ->
-            configuration.dependencies.toList().firstOrNull { dependency ->
-                dependency.group == group && dependency.name == artifact
-            }?.version
-        } ?: project.parent?.artifactVersion(group, artifact)
-    }
-
-    return artifactVersion(this, group, artifact) ?: throw IllegalStateException(
-        "Plugin missing or version not specified: $group:$artifact"
-    )
+    return "0.0.1"
+//    fun artifactVersion(project: Project, group: String, artifact: String): String? {
+//        return project.configurations.firstNotNullOfOrNull { configuration ->
+//            if (!configuration.isCanBeResolved) null
+//            else configuration.resolvedConfiguration.resolvedArtifacts.firstNotNullOfOrNull { resolved ->
+//                val id = resolved.moduleVersion.id
+//                if (id.group == group && id.name == artifact) id.version else null
+//            }
+//        } ?: project.parent?.artifactVersion(group, artifact)
+//    }
+//
+//    return artifactVersion(this, group, artifact) ?: throw IllegalStateException(
+//        "Plugin missing or version not specified: $group:$artifact"
+//    )
 }
