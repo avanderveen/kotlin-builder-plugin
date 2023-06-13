@@ -55,9 +55,11 @@ class BuilderCodeGenerator(
         val typeParameterResolver = typeParameters.toTypeParameterResolver()
         val typeVariables = typeParameters.map { it.toTypeVariableName(typeParameterResolver) }
         val typeName = classDeclaration.asType(emptyList()).toTypeName(typeParameterResolver)
-        val builderTypeName = ClassName(packageName, "${name}Builder").parameterizedBy(typeVariables)
         val params = classDeclaration.primaryConstructor!!.parameters
         val dependencies = Dependencies(aggregating = true, classDeclaration.parent as KSFile)
+        val builderTypeName = ClassName(packageName, "${name}Builder").run {
+            if (typeVariables.isEmpty()) this else parameterizedBy(typeVariables)
+        }
 
         FileSpec.builder(packageName, "${name}Builder")
             .addAnnotation(
@@ -65,6 +67,7 @@ class BuilderCodeGenerator(
                     .useSiteTarget(FILE)
                     .addMember("%S", "PrivatePropertyName")
                     .addMember("%S", "RedundantVisibilityModifier")
+                    .addMember("%S", "MemberVisibilityCanBePrivate")
                     .build()
             )
             .addType(builderClass(name, typeName, fileContent, params, typeVariables, typeParameterResolver))
@@ -103,19 +106,26 @@ private fun builderFunction(
     builderName: String,
     builderTypeName: TypeName,
     typeVariables: List<TypeVariableName>
-) = FunSpec.builder(builderName)
-    .addTypeVariables(typeVariables)
-    .addParameter(
-        ParameterSpec.builder(
-            "builder",
-            LambdaTypeName.get(
-                receiver = builderTypeName,
-                returnType = ClassName("kotlin", "Unit")
-            )
-        ).build()
-    )
-    .addStatement("return ${name}Builder<T>().apply(builder).build()")
-    .build()
+): FunSpec {
+    val typeArgs = typeVariables.joinToString(
+        prefix = "<",
+        postfix = ">"
+    ) { it.name }.replace("<>", "")
+
+    return FunSpec.builder(builderName)
+        .addTypeVariables(typeVariables)
+        .addParameter(
+            ParameterSpec.builder(
+                "builder",
+                LambdaTypeName.get(
+                    receiver = builderTypeName,
+                    returnType = ClassName("kotlin", "Unit")
+                )
+            ).build()
+        )
+        .addStatement("return ${name}Builder$typeArgs().apply(builder).build()")
+        .build()
+}
 
 private fun publicProperty(
     paramName: String,
