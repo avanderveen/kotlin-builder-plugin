@@ -12,6 +12,11 @@ class BuilderTest {
             age = 5
             generic = "something"
             nullable = null
+
+            // TODO
+            // - Generate builder for nested classes to enable `foo = Foo { bar = "" }`
+            // - Generate nested builder for nested classes to enable `foo { bar = "" }`
+            foo = Example.Foo("")
         }
 
         assertEquals("bob", example.name)

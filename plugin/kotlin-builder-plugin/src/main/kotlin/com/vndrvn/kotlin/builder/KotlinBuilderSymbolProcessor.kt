@@ -15,11 +15,7 @@ class KotlinBuilderSymbolProcessor(
             .getSymbolsWithAnnotation(Builder::class.qualifiedName!!)
             .filterIsInstance<KSClassDeclaration>()
             .filter { it.parent is KSFile }
-            .groupBy {
-                (it.parent as KSFile).run {
-                    Paths.get(filePath)
-                }
-            }
+            .groupBy { Paths.get((it.parent as KSFile).filePath) }
             .forEach { (filePath, classDeclarations) ->
                 codeGenerator.generate(filePath, classDeclarations)
             }
