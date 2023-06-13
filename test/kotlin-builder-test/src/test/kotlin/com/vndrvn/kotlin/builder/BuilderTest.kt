@@ -6,7 +6,7 @@ import kotlin.test.assertNull
 
 class BuilderTest {
     @Test
-    fun blah() {
+    fun `happy path`() {
         val example = Example<String> {
             name = "bob"
             age = 5
