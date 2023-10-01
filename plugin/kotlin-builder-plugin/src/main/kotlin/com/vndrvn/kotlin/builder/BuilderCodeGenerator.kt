@@ -22,12 +22,19 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.ksp.TypeParameterResolver
+import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import com.squareup.kotlinpoet.ksp.writeTo
 import java.nio.file.Path
 import kotlin.io.path.readText
+
+private val suppress = listOf(
+    "PrivatePropertyName",
+    "RedundantVisibilityModifier",
+    "MemberVisibilityCanBePrivate"
+)
 
 class BuilderCodeGenerator(
     private val codeGenerator: CodeGenerator
@@ -47,6 +54,8 @@ class BuilderCodeGenerator(
         fileContent: String,
         classDeclaration: KSClassDeclaration
     ) {
+        // TODO: move all of this argument collecting out into BuilderClassArgs and BuilderFunctionArgs classes
+        // - constructors can accept a KSClassDeclaration (and fileContent if needed)
         val annotation = classDeclaration.getAnnotationsByType(Builder::class).single()
         val name = classDeclaration.simpleName.asString()
         val builderName = annotation.name.ifBlank { name }
@@ -61,27 +70,32 @@ class BuilderCodeGenerator(
             if (typeVariables.isEmpty()) this else parameterizedBy(typeVariables)
         }
 
+        val paramsWithBuilders = classDeclaration.declarations
+            .filterIsInstance<KSClassDeclaration>()
+            .filter { it.getAnnotationsByType(Builder::class).any() }
+            .mapNotNull { params.firstOfTypeOrNull(it.toClassName(), typeParameterResolver).pairWith(it) }
+            .toMap()
+
         FileSpec.builder(packageName, "${name}Builder")
-            .addAnnotation(
-                AnnotationSpec.builder(Suppress::class)
-                    .useSiteTarget(FILE)
-                    .addMember("%S", "PrivatePropertyName")
-                    .addMember("%S", "RedundantVisibilityModifier")
-                    .addMember("%S", "MemberVisibilityCanBePrivate")
-                    .build()
-            )
-            .addType(builderClass(name, typeName, fileContent, params, typeVariables, typeParameterResolver))
+            .addAnnotation(suppressAnnotation())
+            .addType(builderClass(name, typeName, fileContent, params, paramsWithBuilders, typeVariables, typeParameterResolver))
             .addFunction(builderFunction(name, builderName, builderTypeName, typeVariables))
             .build()
             .writeTo(codeGenerator, dependencies)
     }
 }
 
+private fun suppressAnnotation() = AnnotationSpec.builder(Suppress::class)
+    .useSiteTarget(FILE)
+    .apply { suppress.forEach { addMember("%S", it) } }
+    .build()
+
 private fun builderClass(
     name: String,
     typeName: TypeName,
     fileContent: String,
     params: List<KSValueParameter>,
+    paramsWithBuilders: Map<KSValueParameter, KSClassDeclaration>,
     typeVariables: List<TypeVariableName>,
     typeParameterResolver: TypeParameterResolver
 ) = TypeSpec.classBuilder("${name}Builder").apply {
@@ -96,6 +110,8 @@ private fun builderClass(
         addProperty(backingProperty(paramName, paramType))
         addProperty(publicProperty(paramName, paramType))
         addProperty(wasSetProperty(paramName))
+
+        // TODO: generate nested builder classes based on `paramsWithBuilders`
     }
 
     addFunction(buildFunction(fileContent, name, typeName, params))
@@ -204,8 +220,29 @@ private fun KSValueParameter.defaultValue(fileContent: String): Pair<String, Str
 
 private const val MATCH_GROUP = "value"
 
+/**
+ * TODO
+ *
+ * This regex needs to be a bit more advanced. It currently looks for `<paramName>: <any string> = <default value>`,
+ * without considering context. It should ensure that the parameter it is looking for occurs within the primary
+ * constructor's parameter list.
+ */
 private fun KSValueParameter.defaultValueRegex(fileContent: String) = Regex(
     """${name!!.asString()}\s*:\s*\w+\s*=\s*(?<$MATCH_GROUP>[^,)]+)""",
     RegexOption.MULTILINE
-).find(fileContent)?.groups?.get(MATCH_GROUP)?.value?.trim()
-    ?: throw IllegalStateException("Could not find default value for parameter ${name!!.asString()}:\r\n$fileContent")
+).find(fileContent)?.groups?.get(MATCH_GROUP)?.value?.trim() ?: throw IllegalStateException(
+    "Could not find default value for parameter ${name!!.asString()}:\r\n$fileContent"
+)
+
+/**
+ * Utils
+ */
+
+private fun List<KSValueParameter>.firstOfTypeOrNull(
+    typeName: TypeName,
+    typeParameterResolver: TypeParameterResolver
+) = firstOrNull { param ->
+    typeName == param.type.toTypeName(typeParameterResolver)
+}
+
+private fun <T, U> T?.pairWith(other: U) = this?.let { Pair(it, other) }
