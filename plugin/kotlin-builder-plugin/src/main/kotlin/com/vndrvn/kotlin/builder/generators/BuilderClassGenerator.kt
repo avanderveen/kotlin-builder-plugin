@@ -2,7 +2,9 @@ package com.vndrvn.kotlin.builder.generators
 
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.getAnnotationsByType
+import com.google.devtools.ksp.symbol.FileLocation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
@@ -30,7 +32,7 @@ import com.vndrvn.kotlin.builder.Builder
 import com.vndrvn.kotlin.builder.pairWith
 
 class BuilderClassGenerator(
-    private val fileContent: String,
+    private val fileContent: List<String>,
     classDeclaration: KSClassDeclaration
 ) {
     private val name: String = classDeclaration.simpleName.asString()
@@ -167,19 +169,22 @@ class BuilderClassGenerator(
 
     private val matchGroup = "value"
 
-    /**
-     * TODO
-     *
-     * This regex needs to be a bit more advanced. It currently looks for `<paramName>: <any string> = <default value>`,
-     * without considering context. It should ensure that the parameter it is looking for occurs within the primary
-     * constructor's parameter list.
-     */
-    private fun KSValueParameter.defaultValueRegex() = Regex(
-        """${name!!.asString()}\s*:\s*\w+\s*=\s*(?<$matchGroup>[^,)]+)""",
-        RegexOption.MULTILINE
-    ).find(fileContent)?.groups?.get(matchGroup)?.value?.trim() ?: throw IllegalStateException(
-        "Could not find default value for parameter ${name!!.asString()}:\r\n$fileContent"
-    )
+    private fun KSValueParameter.defaultValueRegex(): String {
+        val pattern = """${name!!.asString()}\s*:\s*\w+\s*=\s*(?<$matchGroup>[^,)]+)"""
+        val fileLocation = location as FileLocation
+        val line = fileContent.getOrElse(fileLocation.lineNumber - 1) { "" }
+        val regex = Regex(pattern, RegexOption.MULTILINE)
+        val defaultValue = regex.find(line)?.groups?.get(matchGroup)?.value?.trim()
+        return defaultValue ?: throw IllegalStateException(
+            """
+            Could not find default value for parameter ${name!!.asString()}
+
+            Line ${fileLocation.lineNumber} in ${fileLocation.filePath}:
+
+                $line
+            """.trimIndent()
+        )
+    }
 
     private fun List<KSValueParameter>.firstOfTypeOrNull(
         typeName: TypeName,
@@ -190,7 +195,7 @@ class BuilderClassGenerator(
 }
 
 private fun generate(
-    fileContent: String,
+    fileContent: List<String>,
     classDeclaration: KSClassDeclaration
 ): TypeSpec = BuilderClassGenerator(
     fileContent,

@@ -14,6 +14,7 @@ import com.squareup.kotlinpoet.ksp.writeTo
 import com.vndrvn.kotlin.builder.generators.BuilderClassGenerator
 import com.vndrvn.kotlin.builder.generators.BuilderFunctionGenerator
 import java.nio.file.Path
+import kotlin.io.path.readLines
 import kotlin.io.path.readText
 
 private val suppress = listOf(
@@ -29,14 +30,14 @@ class BuilderCodeGenerator(
         filePath: Path,
         classDeclarations: List<KSClassDeclaration>
     ) {
-        val fileContent = filePath.readText()
+        val fileContent = filePath.readLines()
         classDeclarations.forEach { classDeclaration ->
             generate(fileContent, classDeclaration)
         }
     }
 
     private fun generate(
-        fileContent: String,
+        fileContent: List<String>,
         classDeclaration: KSClassDeclaration
     ) {
         val name = classDeclaration.simpleName.asString()
