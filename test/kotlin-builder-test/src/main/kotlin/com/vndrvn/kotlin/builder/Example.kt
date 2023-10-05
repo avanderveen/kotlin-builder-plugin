@@ -6,7 +6,8 @@ data class Example<T : Any>(
     val age: Int = 0,
     val generic: T,
     val nullable: Boolean?,
-    val foo: Foo
+    val foo: Foo,
+    val list: List<String>
 ) {
     @Builder
     data class Foo(

@@ -12,13 +12,12 @@ class BuilderTest {
             age = 5
             generic = "something"
             nullable = null
-
-            // TODO
-            // - Generate builder for nested classes to enable `foo = Foo { bar = "" }`
-            // - Generate nested builder for nested classes to enable `foo { bar = "" }`
             foo = Foo {
                 bar = "baz"
             }
+
+            // TODO add builders for collection types (maps, arrays, lists, sets, etc.)
+            list = listOf("abc")
         }
 
         assertEquals("bob", example.name)
