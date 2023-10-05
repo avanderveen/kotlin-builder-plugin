@@ -7,7 +7,12 @@ data class Example<T : Any>(
     val generic: T,
     val nullable: Boolean?,
     val foo: Foo,
-    val list: List<String>
+    val list: List<String>,
+    val set: Set<String>,
+    val map: Map<String, String>,
+    val mutableList: MutableList<String>,
+    val mutableSet: MutableSet<String>,
+    val mutableMap: MutableMap<String, String>
 ) {
     @Builder
     data class Foo(

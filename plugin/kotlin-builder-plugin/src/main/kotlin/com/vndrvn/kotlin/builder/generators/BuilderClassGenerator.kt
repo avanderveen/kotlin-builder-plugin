@@ -5,10 +5,19 @@ import com.google.devtools.ksp.getAnnotationsByType
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.squareup.kotlinpoet.BOOLEAN
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.LIST
+import com.squareup.kotlinpoet.MAP
+import com.squareup.kotlinpoet.MUTABLE_LIST
+import com.squareup.kotlinpoet.MUTABLE_MAP
+import com.squareup.kotlinpoet.MUTABLE_SET
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.SET
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
@@ -84,9 +93,7 @@ class BuilderClassGenerator(
         .mutable(true)
         .getter(
             FunSpec.getterBuilder()
-                .addStatement(
-                    "return ${paramName}_backing${if (paramType.isNullable) "" else "!!"}"
-                )
+                .addGetterImplementation(paramName, paramType)
                 .build()
         )
         .setter(
@@ -100,6 +107,28 @@ class BuilderClassGenerator(
                 .build()
         )
         .build()
+
+    private fun FunSpec.Builder.addGetterImplementation(
+        paramName: String,
+        paramType: TypeName
+    ) = when (
+        val className = paramType as? ClassName ?: (paramType as? ParameterizedTypeName)?.rawType
+    ) {
+        LIST,
+        SET,
+        MAP -> addStatement("return ${paramName}_backing ?: empty${className.simpleName}()")
+        MUTABLE_LIST,
+        MUTABLE_SET,
+        MUTABLE_MAP -> CodeBlock.builder()
+            .beginControlFlow("if (${paramName}_backing == null)")
+            .addStatement("${paramName}_backing = mutable${className.simpleName.removePrefix("Mutable")}Of()")
+            .addStatement("${paramName}_wasSet = true")
+            .endControlFlow()
+            .addStatement("return ${paramName}_backing!!")
+            .build()
+            .let { addCode(it) }
+        else -> addStatement("return ${paramName}_backing${if (paramType.isNullable) "" else "!!"}")
+    }
 
     private fun backingProperty(
         paramName: String,

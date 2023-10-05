@@ -16,8 +16,13 @@ class BuilderTest {
                 bar = "baz"
             }
 
-            // TODO add builders for collection types (maps, arrays, lists, sets, etc.)
-            list = listOf("abc")
+            list += "abc"
+            set += "123"
+            map += "abc" to "123"
+
+            mutableList.add("abc")
+            mutableSet.add("123")
+            mutableMap["abc"] = "123"
         }
 
         assertEquals("bob", example.name)
@@ -25,5 +30,13 @@ class BuilderTest {
         assertEquals("something", example.generic)
         assertNull(example.nullable)
         assertEquals("baz", example.foo.bar)
+        assertEquals("abc", example.list.singleOrNull())
+        assertEquals("123", example.set.singleOrNull())
+        assertEquals("abc", example.map.keys.singleOrNull())
+        assertEquals("123", example.map.values.singleOrNull())
+        assertEquals("abc", example.mutableList.singleOrNull())
+        assertEquals("123", example.mutableSet.singleOrNull())
+        assertEquals("abc", example.mutableMap.keys.singleOrNull())
+        assertEquals("123", example.mutableMap.values.singleOrNull())
     }
 }
