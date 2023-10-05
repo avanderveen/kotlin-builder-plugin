@@ -16,12 +16,15 @@ class BuilderTest {
             // TODO
             // - Generate builder for nested classes to enable `foo = Foo { bar = "" }`
             // - Generate nested builder for nested classes to enable `foo { bar = "" }`
-            foo = Example.Foo("")
+            foo = Foo {
+                bar = "baz"
+            }
         }
 
         assertEquals("bob", example.name)
         assertEquals(5, example.age)
         assertEquals("something", example.generic)
         assertNull(example.nullable)
+        assertEquals("baz", example.foo.bar)
     }
 }
