@@ -1,5 +1,7 @@
 # Kotlin Builder DSL Plugin
 
+> TODO: this readme needs to be updated
+
 This plugin generates idiomatic [type-safe builders](https://kotlinlang.org/docs/type-safe-builders.html) for Kotlin
 classes.
 
