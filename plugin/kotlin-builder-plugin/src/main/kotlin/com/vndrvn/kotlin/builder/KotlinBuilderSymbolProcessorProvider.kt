@@ -9,7 +9,14 @@ class KotlinBuilderSymbolProcessorProvider : SymbolProcessorProvider {
         environment: SymbolProcessorEnvironment
     ) = KotlinBuilderSymbolProcessor(
         BuilderCodeGenerator(
-            environment.codeGenerator
+            environment.codeGenerator,
+            environment.casing
         )
     )
+}
+
+private val SymbolProcessorEnvironment.casing: Casing? get() {
+    return options["${javaClass.packageName}.casing"]?.let {
+        if (it.isBlank()) null else Casing.valueOf(it)
+    }
 }

@@ -1,3 +1,6 @@
+import com.vndrvn.kotlin.builder.Casing
+import com.vndrvn.kotlin.builder.KotlinBuilderPluginExtension
+
 plugins {
     kotlin("jvm")
     id("com.vndrvn.kotlin.builder")
@@ -10,4 +13,8 @@ testing {
             useKotlinTest()
         }
     }
+}
+
+configure<KotlinBuilderPluginExtension> {
+    casing.set(Casing.CamelCase)
 }

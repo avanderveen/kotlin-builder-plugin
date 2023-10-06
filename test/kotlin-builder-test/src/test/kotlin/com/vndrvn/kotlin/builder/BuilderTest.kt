@@ -23,6 +23,8 @@ class BuilderTest {
             mutableList.add("abc")
             mutableSet.add("123")
             mutableMap["abc"] = "123"
+
+            extraArg = "secondary constructor arg"
         }
 
         assertEquals("bob", example.name)
@@ -30,7 +32,9 @@ class BuilderTest {
         assertEquals("something", example.generic)
         assertNull(example.nullable)
         assertEquals("baz", example.foo.bar)
-        assertEquals("abc", example.list.singleOrNull())
+        assertEquals(2, example.list.size)
+        assertEquals("abc", example.list.firstOrNull())
+        assertEquals("secondary constructor arg", example.list.lastOrNull())
         assertEquals("123", example.set.singleOrNull())
         assertEquals("abc", example.map.keys.singleOrNull())
         assertEquals("123", example.map.values.singleOrNull())

@@ -2,9 +2,9 @@ package com.vndrvn.kotlin.builder.generators
 
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.getAnnotationsByType
+import com.google.devtools.ksp.getConstructors
 import com.google.devtools.ksp.symbol.FileLocation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
@@ -29,11 +29,14 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import com.vndrvn.kotlin.builder.Builder
+import com.vndrvn.kotlin.builder.Casing
 import com.vndrvn.kotlin.builder.pairWith
 
+@OptIn(KspExperimental::class)
 class BuilderClassGenerator(
     private val fileContent: List<String>,
-    classDeclaration: KSClassDeclaration
+    classDeclaration: KSClassDeclaration,
+    private val casingOverride: Casing?
 ) {
     private val name: String = classDeclaration.simpleName.asString()
 
@@ -45,9 +48,17 @@ class BuilderClassGenerator(
 
     private val typeName: TypeName = classDeclaration.asType(emptyList()).toTypeName(typeParameterResolver)
 
-    private val params: List<KSValueParameter> = classDeclaration.primaryConstructor!!.parameters
+    private val params: List<KSValueParameter> = classDeclaration.getConstructors().filter {
+        it.getAnnotationsByType(Builder.Constructor::class).any()
+    }.toList().ifEmpty {
+        listOf(classDeclaration.primaryConstructor!!)
+    }.singleOrNull()?.parameters ?: throw Exception(
+        """
+        Multiple @Builder.Constructor annotations for $name in file:
+        ${(classDeclaration.location as? FileLocation)?.filePath}
+        """.trimIndent()
+    )
 
-    @OptIn(KspExperimental::class)
     private val paramsWithBuilders: Map<KSValueParameter, KSClassDeclaration> = classDeclaration.declarations
         .filterIsInstance<KSClassDeclaration>()
         .filter { it.getAnnotationsByType(Builder::class).any() }
@@ -69,8 +80,8 @@ class BuilderClassGenerator(
 
             if (paramsWithBuilders.containsKey(parameter)) {
                 val paramClassDeclaration = paramsWithBuilders.getValue(parameter)
-                addType(generate(fileContent, paramClassDeclaration))
-                addFunction(BuilderFunctionGenerator(paramClassDeclaration).generate())
+                addType(generate(fileContent, paramClassDeclaration, casingOverride))
+                addFunction(BuilderFunctionGenerator(paramClassDeclaration, casingOverride).generate())
             }
         }
 
@@ -196,8 +207,10 @@ class BuilderClassGenerator(
 
 private fun generate(
     fileContent: List<String>,
-    classDeclaration: KSClassDeclaration
+    classDeclaration: KSClassDeclaration,
+    casingOverride: Casing?
 ): TypeSpec = BuilderClassGenerator(
     fileContent,
-    classDeclaration
+    classDeclaration,
+    casingOverride
 ).generate()

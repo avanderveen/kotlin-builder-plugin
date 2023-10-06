@@ -11,6 +11,7 @@ dependencies {
     val kspVersion: String by project
     implementation(kotlin("stdlib"))
     implementation(kotlin("gradle-plugin"))
+    implementation(project(":kotlin-builder-annotation"))
     implementation("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:$kspVersion")
 }
 

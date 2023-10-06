@@ -13,23 +13,28 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import com.vndrvn.kotlin.builder.Builder
+import com.vndrvn.kotlin.builder.Casing
+import com.vndrvn.kotlin.builder.withCasing
 
 class BuilderFunctionGenerator(
-    private val classDeclaration: KSClassDeclaration
+    private val classDeclaration: KSClassDeclaration,
+    private val casingOverride: Casing?
 ) {
     private val name: String = classDeclaration.simpleName.asString()
 
     @OptIn(KspExperimental::class)
-    private val builderName: String = classDeclaration
-        .getAnnotationsByType(Builder::class).single().name.ifBlank { name }
+    private val builderName: String = classDeclaration.getAnnotationsByType(Builder::class).single().let {
+        it.name.ifBlank {
+            name.withCasing(
+                casingOverride?.let { override ->
+                    if (it.casing == Casing.Default) override else null
+                } ?: it.casing
+            )
+        }
+    }
 
     private val typeVariables: List<TypeVariableName> = classDeclaration.typeParameters.map {
         it.toTypeVariableName(classDeclaration.typeParameters.toTypeParameterResolver())
-    }
-
-    private val builderTypeName = ClassName("", "${classDeclaration.simpleName.asString()}Builder").run {
-        if (typeVariables.isEmpty()) this
-        else parameterizedBy(typeVariables)
     }
 
     fun generate(): FunSpec {

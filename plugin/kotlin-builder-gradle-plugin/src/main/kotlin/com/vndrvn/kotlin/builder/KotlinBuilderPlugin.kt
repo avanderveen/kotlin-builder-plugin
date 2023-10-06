@@ -1,8 +1,11 @@
 package com.vndrvn.kotlin.builder
 
+import com.google.devtools.ksp.gradle.KspExtension
+import com.google.devtools.ksp.gradle.KspTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 
 @Suppress("unused")
 class KotlinBuilderPlugin : Plugin<Project> {
@@ -23,6 +26,13 @@ class KotlinBuilderPlugin : Plugin<Project> {
         project.extensions.configure("kotlin") { kotlin: KotlinJvmProjectExtension ->
             kotlin.sourceSets.getByName("main").kotlin.srcDir("build/generated/ksp/main/kotlin")
             kotlin.sourceSets.getByName("test").kotlin.srcDir("build/generated/ksp/test/kotlin")
+        }
+
+        // TODO these options aren't working (SymbolProcessorEnvironment.options doesn't have the passed option)
+        val extension = project.extensions.create("builder", KotlinBuilderPluginExtension::class.java)
+        extension.casing.convention(Casing.Default)
+        project.extensions.configure(KspExtension::class.java) {
+            it.arg("com.vndrvn.kotlin.builder.casing", extension.casing.orNull?.name ?: "")
         }
     }
 }

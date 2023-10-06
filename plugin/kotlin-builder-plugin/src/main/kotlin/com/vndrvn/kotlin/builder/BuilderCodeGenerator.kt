@@ -24,7 +24,8 @@ private val suppress = listOf(
 )
 
 class BuilderCodeGenerator(
-    private val codeGenerator: CodeGenerator
+    private val codeGenerator: CodeGenerator,
+    private val casingOverride: Casing?
 ) {
     fun generate(
         filePath: Path,
@@ -45,8 +46,8 @@ class BuilderCodeGenerator(
         val dependencies = Dependencies(aggregating = true, classDeclaration.parent as KSFile)
         FileSpec.builder(packageName, "${name}Builder")
             .addAnnotation(suppressAnnotation())
-            .addType(BuilderClassGenerator(fileContent, classDeclaration).generate())
-            .addFunction(BuilderFunctionGenerator(classDeclaration).generate())
+            .addType(BuilderClassGenerator(fileContent, classDeclaration, casingOverride).generate())
+            .addFunction(BuilderFunctionGenerator(classDeclaration, casingOverride).generate())
             .build()
             .writeTo(codeGenerator, dependencies)
     }

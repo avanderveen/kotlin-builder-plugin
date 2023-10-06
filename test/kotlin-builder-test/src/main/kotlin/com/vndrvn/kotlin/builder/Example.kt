@@ -14,6 +14,34 @@ data class Example<T : Any>(
     val mutableSet: MutableSet<String>,
     val mutableMap: MutableMap<String, String>
 ) {
+    @Builder.Constructor
+    constructor(
+        name: String,
+        age: Int = 0,
+        generic: T,
+        nullable: Boolean?,
+        foo: Foo,
+        list: List<String>,
+        set: Set<String>,
+        map: Map<String, String>,
+        mutableList: MutableList<String>,
+        mutableSet: MutableSet<String>,
+        mutableMap: MutableMap<String, String>,
+        extraArg: String
+    ) : this(
+        name,
+        age,
+        generic,
+        nullable,
+        foo,
+        list + extraArg,
+        set,
+        map,
+        mutableList,
+        mutableSet,
+        mutableMap
+    )
+
     @Builder
     data class Foo(
         val bar: String
