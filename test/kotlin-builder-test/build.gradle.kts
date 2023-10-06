@@ -1,5 +1,4 @@
 import com.vndrvn.kotlin.builder.Casing
-import com.vndrvn.kotlin.builder.KotlinBuilderPluginExtension
 
 plugins {
     kotlin("jvm")
@@ -15,6 +14,7 @@ testing {
     }
 }
 
-configure<KotlinBuilderPluginExtension> {
+// TODO change this to "builderKt" as part of renaming project to BuilderKt
+builder {
     casing.set(Casing.CamelCase)
 }
