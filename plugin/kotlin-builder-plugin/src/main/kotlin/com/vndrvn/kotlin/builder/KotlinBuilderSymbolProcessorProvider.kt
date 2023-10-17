@@ -16,7 +16,7 @@ class KotlinBuilderSymbolProcessorProvider : SymbolProcessorProvider {
 }
 
 private val SymbolProcessorEnvironment.casing: Casing? get() {
-    return options["${javaClass.packageName}.casing"]?.let {
+    return options["com.vndrvn.kotlin.builder.casing"]?.let {
         if (it.isBlank()) null else Casing.valueOf(it)
     }
 }

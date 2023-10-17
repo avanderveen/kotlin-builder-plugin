@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class BuilderTest {
+
     @Test
     fun `happy path`() {
         val example = Example<String> {

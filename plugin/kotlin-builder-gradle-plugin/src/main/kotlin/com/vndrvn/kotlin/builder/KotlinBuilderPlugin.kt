@@ -7,6 +7,12 @@ import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 
+private const val CASING_OPTION = "com.vndrvn.kotlin.builder.casing"
+
+private val kspOptions = mapOf<String, KotlinBuilderPluginExtension.() -> String?>(
+    CASING_OPTION to { casing.orNull?.name }
+)
+
 @Suppress("unused")
 class KotlinBuilderPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -28,12 +34,38 @@ class KotlinBuilderPlugin : Plugin<Project> {
             kotlin.sourceSets.getByName("test").kotlin.srcDir("build/generated/ksp/test/kotlin")
         }
 
-        // TODO these options aren't working (SymbolProcessorEnvironment.options doesn't have the passed option)
-        val extension = project.extensions.create("builder", KotlinBuilderPluginExtension::class.java)
-        extension.casing.convention(Casing.Default)
-        project.extensions.configure(KspExtension::class.java) {
-            it.arg("com.vndrvn.kotlin.builder.casing", extension.casing.orNull?.name ?: "")
+        val builderKt = project.extensions.create(
+            "builderKt",
+            KotlinBuilderPluginExtension::class.java
+        )
+
+        project.tasks.create("builderKt") { task ->
+            project.tasks.getByName("compileKotlin").dependsOn(task)
+            task.doLast {
+                project.extensions.configure("ksp") { ksp: KspExtension ->
+                    builderKt.casing.orNull?.let { casing ->
+                        ksp.arg(CASING_OPTION, casing.name)
+                    }
+                }
+            }
         }
+
+//        project.extensions.configure("ksp") { ksp: KspExtension ->
+//            throw Exception("Casing: ${builderKt.casing.orNull}")
+//        }
+
+//        // not sure how the hell to actually apply the extension config to a task
+//        project.extensions.create(
+//            "builderKt",
+//            KotlinBuilderPluginExtension::class.java
+//        ).apply {
+//            project.extensions.configure(
+//                KspExtension::class.java
+//            ) { ksp -> kspOptions
+//                .mapValues { (_, valueProvider) -> valueProvider() }
+//                .forEach { (key, value) -> value?.let { ksp.arg(key, it) } }
+//            }
+//        }
     }
 }
 
