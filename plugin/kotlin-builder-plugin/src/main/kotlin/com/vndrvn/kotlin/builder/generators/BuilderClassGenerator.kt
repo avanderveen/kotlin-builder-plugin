@@ -30,7 +30,9 @@ import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import com.vndrvn.kotlin.builder.Builder
 import com.vndrvn.kotlin.builder.Casing
+import com.vndrvn.kotlin.builder.builderConstructor
 import com.vndrvn.kotlin.builder.pairWith
+import com.vndrvn.kotlin.builder.typeName
 
 @OptIn(KspExperimental::class)
 class BuilderClassGenerator(
@@ -38,28 +40,19 @@ class BuilderClassGenerator(
     classDeclaration: KSClassDeclaration,
     private val casingOverride: Casing?
 ) {
-    private val name: String = classDeclaration.simpleName.asString()
+    private val name = classDeclaration.simpleName.asString()
 
-    private val typeParameterResolver: TypeParameterResolver = classDeclaration.typeParameters.toTypeParameterResolver()
+    private val typeParameterResolver = classDeclaration.typeParameters.toTypeParameterResolver()
 
-    private val typeVariables: List<TypeVariableName> = classDeclaration.typeParameters.map {
+    private val typeVariables = classDeclaration.typeParameters.map {
         it.toTypeVariableName(typeParameterResolver)
     }
 
-    private val typeName: TypeName = classDeclaration.asType(emptyList()).toTypeName(typeParameterResolver)
+    private val typeName = classDeclaration.typeName
 
-    private val params: List<KSValueParameter> = classDeclaration.getConstructors().filter {
-        it.getAnnotationsByType(Builder.Constructor::class).any()
-    }.toList().ifEmpty {
-        listOf(classDeclaration.primaryConstructor!!)
-    }.singleOrNull()?.parameters ?: throw Exception(
-        """
-        Multiple @Builder.Constructor annotations for $name in file:
-        ${(classDeclaration.location as? FileLocation)?.filePath}
-        """.trimIndent()
-    )
+    private val params = classDeclaration.builderConstructor.parameters
 
-    private val paramsWithBuilders: Map<KSValueParameter, KSClassDeclaration> = classDeclaration.declarations
+    private val paramsWithBuilders = classDeclaration.declarations
         .filterIsInstance<KSClassDeclaration>()
         .filter { it.getAnnotationsByType(Builder::class).any() }
         .mapNotNull { params.firstOfTypeOrNull(it.toClassName(), typeParameterResolver).pairWith(it) }

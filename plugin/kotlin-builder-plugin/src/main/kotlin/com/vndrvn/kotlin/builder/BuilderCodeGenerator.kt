@@ -10,6 +10,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.ksp.writeTo
 import com.vndrvn.kotlin.builder.generators.BuilderClassGenerator
 import com.vndrvn.kotlin.builder.generators.BuilderFunctionGenerator
+import com.vndrvn.kotlin.builder.generators.CopyExtensionFunctionGenerator
 import java.nio.file.Path
 import kotlin.io.path.readLines
 
@@ -40,10 +41,12 @@ class BuilderCodeGenerator(
         val name = classDeclaration.simpleName.asString()
         val packageName = classDeclaration.packageName.asString()
         val dependencies = Dependencies(aggregating = true, classDeclaration.parent as KSFile)
+        val copyExtension = CopyExtensionFunctionGenerator(classDeclaration).generate()
         FileSpec.builder(packageName, "${name}Builder")
             .addAnnotation(suppressAnnotation())
             .addType(BuilderClassGenerator(fileContent, classDeclaration, casingOverride).generate())
             .addFunction(BuilderFunctionGenerator(classDeclaration, casingOverride).generate())
+            .also { copyExtension?.let(it::addFunction) }
             .build()
             .writeTo(codeGenerator, dependencies)
     }

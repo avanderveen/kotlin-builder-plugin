@@ -44,4 +44,19 @@ class BuilderTest {
         assertEquals("abc", example.mutableMap.keys.singleOrNull())
         assertEquals("123", example.mutableMap.values.singleOrNull())
     }
+
+    @Test
+    fun copy() {
+        val example = CopyExample<String> {
+            test = "abc"
+            test2 = "123"
+        }
+
+        val copied = example.copy {
+            test = "def"
+        }
+
+        assertEquals("def", copied.test)
+        assertEquals(123, copied.test2)
+    }
 }
