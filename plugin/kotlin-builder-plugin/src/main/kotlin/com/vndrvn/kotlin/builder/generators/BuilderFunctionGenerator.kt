@@ -14,6 +14,7 @@ import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import com.vndrvn.kotlin.builder.Builder
 import com.vndrvn.kotlin.builder.Casing
+import com.vndrvn.kotlin.builder.builderTypeName
 import com.vndrvn.kotlin.builder.withCasing
 
 class BuilderFunctionGenerator(
@@ -23,7 +24,7 @@ class BuilderFunctionGenerator(
     private val name: String = classDeclaration.simpleName.asString()
 
     @OptIn(KspExperimental::class)
-    private val builderName: String = classDeclaration.getAnnotationsByType(Builder::class).single().let {
+    private val builderName = classDeclaration.getAnnotationsByType(Builder::class).single().let {
         it.name.ifBlank {
             name.withCasing(
                 casingOverride?.let { override ->
@@ -33,7 +34,7 @@ class BuilderFunctionGenerator(
         }
     }
 
-    private val typeVariables: List<TypeVariableName> = classDeclaration.typeParameters.map {
+    private val typeVariables = classDeclaration.typeParameters.map {
         it.toTypeVariableName(classDeclaration.typeParameters.toTypeParameterResolver())
     }
 
@@ -49,32 +50,12 @@ class BuilderFunctionGenerator(
                 ParameterSpec.builder(
                     "builder",
                     LambdaTypeName.get(
-                        receiver = builderTypeName(),
+                        receiver = classDeclaration.builderTypeName,
                         returnType = ClassName("kotlin", "Unit")
                     )
                 ).build()
             )
             .addStatement("return ${name}Builder$typeArgs().apply(builder).build()")
             .build()
-    }
-
-    private fun builderTypeName(): TypeName {
-        val simpleNames = mutableListOf(classDeclaration.simpleName.asString())
-        var parent: KSClassDeclaration? = classDeclaration
-        while (true) {
-            parent = parent?.parentDeclaration as? KSClassDeclaration ?: break
-            simpleNames += parent.simpleName.asString()
-        }
-
-        val className = ClassName(
-            (parent ?: classDeclaration).packageName.asString(),
-            *simpleNames.map { "${it}Builder" }.reversed().toTypedArray()
-        )
-
-        if (typeVariables.isEmpty()) {
-            return className
-        }
-
-        return className.parameterizedBy(typeVariables)
     }
 }

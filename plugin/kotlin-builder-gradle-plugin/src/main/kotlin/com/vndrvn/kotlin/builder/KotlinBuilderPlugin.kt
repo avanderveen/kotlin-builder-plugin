@@ -49,23 +49,6 @@ class KotlinBuilderPlugin : Plugin<Project> {
                 }
             }
         }
-
-//        project.extensions.configure("ksp") { ksp: KspExtension ->
-//            throw Exception("Casing: ${builderKt.casing.orNull}")
-//        }
-
-//        // not sure how the hell to actually apply the extension config to a task
-//        project.extensions.create(
-//            "builderKt",
-//            KotlinBuilderPluginExtension::class.java
-//        ).apply {
-//            project.extensions.configure(
-//                KspExtension::class.java
-//            ) { ksp -> kspOptions
-//                .mapValues { (_, valueProvider) -> valueProvider() }
-//                .forEach { (key, value) -> value?.let { ksp.arg(key, it) } }
-//            }
-//        }
     }
 }
 

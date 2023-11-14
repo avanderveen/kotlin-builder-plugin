@@ -1,8 +1,5 @@
-@file:OptIn(KspExperimental::class)
-
 package com.vndrvn.kotlin.builder
 
-import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.symbol.KSClassDeclaration
@@ -15,7 +12,6 @@ import com.vndrvn.kotlin.builder.generators.BuilderClassGenerator
 import com.vndrvn.kotlin.builder.generators.BuilderFunctionGenerator
 import java.nio.file.Path
 import kotlin.io.path.readLines
-import kotlin.io.path.readText
 
 private val suppress = listOf(
     "PrivatePropertyName",
